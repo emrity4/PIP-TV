@@ -452,3 +452,5 @@ https://player.mayya.et/play/b83319a5-ac2b-4fcb-889e-38aaafc50f4f/nbc_eth-1.m3u8
 https://player.mayya.et/play/b83319a5-ac2b-4fcb-889e-38aaafc50f4f/walta_1.m3u8
 #EXTINF:-1 tvg-id="OBNGaammee.et" tvg-logo="https://i.imgur.com/2Lr7m3f.png" group-title="Ethiopia",OBN Gaammee
 https://player.mayya.et/play/b83319a5-ac2b-4fcb-889e-38aaafc50f4f/obn_gaammee_1.m3u8
+#EXTINF:-1 tvg-id="YacineTest" tvg-logo="" group-title="Yacine",Yacine Stream (via fluxstreama)
+http://h31.fluxstreama.online/0021012254/610303030/57583.js

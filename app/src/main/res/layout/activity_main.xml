@@ -25,12 +25,11 @@
         android:visibility="gone"
         android:animateLayoutChanges="true">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="⏸"
-            android:textColor="#FFFFFF"
-            android:textSize="38sp" />
+        <WebView
+            android:id="@+id/pause_icon"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="@android:color/transparent" />
     </LinearLayout>
 
     <LinearLayout
@@ -56,28 +55,16 @@
             android:focusable="true"
             android:clickable="true"
             android:background="@drawable/toolbar_btn_bg" />
-
-        <TextView
-            android:id="@+id/exit_button"
-            android:layout_width="52dp"
-            android:layout_height="52dp"
-            android:gravity="center"
-            android:text="⏻"
-            android:textColor="#FFFFFF"
-            android:textSize="22sp"
-            android:focusable="true"
-            android:clickable="true"
-            android:background="@drawable/toolbar_btn_bg" />
     </LinearLayout>
 
     <LinearLayout
         android:id="@+id/sidebar"
         android:layout_width="400dp"
         android:layout_height="match_parent"
-        android:layout_gravity="start"
+        android:layout_gravity="end"
         android:orientation="vertical"
         android:background="#E50A0A0B"
-        android:translationX="-400dp">
+        android:translationX="400dp">
 
         <TextView
             android:id="@+id/sidebar_header"

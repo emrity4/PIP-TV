@@ -29,6 +29,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var playerView: PlayerView
     private lateinit var pauseIndicator: View
+    private lateinit var pauseIcon: WebView
     private var player: ExoPlayer? = null
     private lateinit var channelList: RecyclerView
     private lateinit var sidebar: View
@@ -45,6 +46,7 @@ class MainActivity : AppCompatActivity() {
     private val channels = mutableListOf<Channel>()
     private var currentItems = listOf<AdapterItem>()
     private var currentChannel: Channel? = null
+    private var lastBackPress = 0L
     private var adapter: GroupedChannelAdapter? = null
     private var isListVisible = false
     private var isSplashShowing = true
@@ -55,6 +57,7 @@ class MainActivity : AppCompatActivity() {
     private var topBarVisible = true
     private var longPressJob: kotlinx.coroutines.Job? = null
     private var longPressHandled = false
+    private var retryCount = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -63,6 +66,16 @@ class MainActivity : AppCompatActivity() {
 
         playerView = findViewById(R.id.player_view)
         pauseIndicator = findViewById(R.id.pause_indicator)
+        pauseIcon = findViewById(R.id.pause_icon)
+        pauseIcon.setLayerType(View.LAYER_TYPE_SOFTWARE, null)
+        pauseIcon.loadDataWithBaseURL(null, """
+            <html><body style="margin:0;background:transparent">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="100%" height="100%">
+              <rect x="6" y="3" width="4" height="18" rx="1.5" fill="white"/>
+              <rect x="14" y="3" width="4" height="18" rx="1.5" fill="white"/>
+            </svg>
+            </body></html>
+        """.trimIndent(), "text/html", "UTF-8")
         sidebar = findViewById(R.id.sidebar)
         channelList = findViewById(R.id.channel_list)
         loadingView = findViewById(R.id.loading_view)
@@ -77,7 +90,6 @@ class MainActivity : AppCompatActivity() {
         channelList.layoutManager = LinearLayoutManager(this)
 
         findViewById<View>(R.id.hamburger_button).setOnClickListener { toggleList() }
-        findViewById<View>(R.id.exit_button).setOnClickListener { finishAffinity() }
         findViewById<Button>(R.id.retry_button).setOnClickListener { loadPlaylist() }
 
         splashView = findViewById(R.id.splash_view)
@@ -202,13 +214,29 @@ class MainActivity : AppCompatActivity() {
         nowPlayingBar.animate().cancel()
 
         player?.release()
+        retryCount = 0
         player = ExoPlayer.Builder(this).build().apply {
-            setMediaItem(MediaItem.fromUri(channel.url))
+            val mediaItem = if (channel.url.endsWith(".js")) {
+                MediaItem.Builder().setUri(channel.url).setMimeType("video/mp2t").build()
+            } else {
+                MediaItem.fromUri(channel.url)
+            }
+            setMediaItem(mediaItem)
             prepare()
             playWhenReady = !isPaused
             addListener(object : Player.Listener {
                 override fun onPlayerError(error: PlaybackException) {
-                    Toast.makeText(this@MainActivity, getString(R.string.error_playing), Toast.LENGTH_SHORT).show()
+                    if (retryCount < 3) {
+                        retryCount++
+                        scope.launch {
+                            delay(1000)
+                            player?.stop()
+                            player?.prepare()
+                            player?.playWhenReady = !isPaused
+                        }
+                    } else {
+                        Toast.makeText(this@MainActivity, getString(R.string.error_playing), Toast.LENGTH_SHORT).show()
+                    }
                 }
             })
         }
@@ -223,7 +251,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         scope.launch {
-            delay(3000)
+            delay(7000)
             nowPlayingBar.animate().alpha(0f).setDuration(500).start()
         }
     }
@@ -263,7 +291,13 @@ class MainActivity : AppCompatActivity() {
                     toggleList()
                     return true
                 }
-                finish()
+                val now = System.currentTimeMillis()
+                if (now - lastBackPress < 2000) {
+                    finish()
+                } else {
+                    lastBackPress = now
+                    Toast.makeText(this, R.string.press_back_again, Toast.LENGTH_SHORT).show()
+                }
                 return true
             }
         }
@@ -313,10 +347,15 @@ class MainActivity : AppCompatActivity() {
     private fun toggleList() {
         isListVisible = !isListVisible
         sidebar.animate()
-            .translationX(if (isListVisible) 0f else -sidebar.width.toFloat())
+            .translationX(if (isListVisible) 0f else sidebar.width.toFloat())
             .setDuration(200)
             .start()
-        if (isListVisible) showTopBar()
+        if (isListVisible) {
+            showTopBar()
+        } else {
+            topBar.animate().alpha(0f).setDuration(200).start()
+            topBarVisible = false
+        }
     }
 
     private fun showLoading(show: Boolean) {
