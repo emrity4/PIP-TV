@@ -81,7 +81,7 @@
             android:paddingBottom="160dp"
             android:paddingStart="10dp"
             android:paddingEnd="10dp"
-            android:scrollBarStyle="outsideOverlay" />
+            android:scrollbarStyle="outsideOverlay" />
     </LinearLayout>
 
     <LinearLayout
