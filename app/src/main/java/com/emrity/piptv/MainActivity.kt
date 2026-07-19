@@ -214,7 +214,7 @@ class MainActivity : AppCompatActivity() {
         }
         playerView.player = player
         playerView.setShowBuffering(PlayerView.SHOW_BUFFERING_ALWAYS)
-        playerView.resizeMode = resizeModes[resizeModeIndex]
+        playerView.resizeMode = 0
 
         adapter?.setActiveChannel(channel)
         val chPos = currentItems.indexOfFirst { it is AdapterItem.ChannelItem && it.channel.url == channel.url }
