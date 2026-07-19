@@ -75,7 +75,7 @@ class MainActivity : AppCompatActivity() {
               <rect x="14" y="3" width="4" height="18" rx="1.5" fill="white"/>
             </svg>
             </body></html>
-        """.trimIndent(), "text/html", "UTF-8")
+        """.trimIndent(), "text/html", "UTF-8", null)
         sidebar = findViewById(R.id.sidebar)
         channelList = findViewById(R.id.channel_list)
         loadingView = findViewById(R.id.loading_view)
