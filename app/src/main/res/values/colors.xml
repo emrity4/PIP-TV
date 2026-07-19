@@ -2,4 +2,5 @@
 <resources>
     <color name="bg">#0A0A0B</color>
     <color name="bg_surface">#161618</color>
+    <color name="accent">#FF7A35</color>
 </resources>
