@@ -61,6 +61,8 @@ class MainActivity : AppCompatActivity() {
     private val scope = CoroutineScope(Dispatchers.Main)
     private var lastActivityTime = 0L
     private var topBarVisible = true
+    private var longPressJob: kotlinx.coroutines.Job? = null
+    private var longPressHandled = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -234,16 +236,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    override fun onKeyLongPress(keyCode: Int, event: KeyEvent?): Boolean {
-        return when (keyCode) {
-            KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> {
-                currentChannel?.let { toggleFavorite(it) }
-                true
-            }
-            else -> super.onKeyLongPress(keyCode, event)
-        }
-    }
-
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
         showTopBar()
 
@@ -264,20 +256,13 @@ class MainActivity : AppCompatActivity() {
                 return true
             }
             KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> {
-                player?.let { p ->
-                    if (p.isPlaying) {
-                        p.pause()
-                        isPaused = true
-                        pauseIndicator.visibility = View.VISIBLE
-                        scope.launch {
-                            delay(1500)
-                            pauseIndicator.visibility = View.GONE
-                        }
-                    } else {
-                        p.play()
-                        isPaused = false
-                        pauseIndicator.visibility = View.GONE
-                    }
+                if (event?.repeatCount ?: 0 > 0) return true
+                longPressHandled = false
+                longPressJob?.cancel()
+                longPressJob = scope.launch {
+                    delay(500)
+                    longPressHandled = true
+                    currentChannel?.let { toggleFavorite(it) }
                 }
                 return true
             }
@@ -298,6 +283,31 @@ class MainActivity : AppCompatActivity() {
             }
         }
         return super.onKeyDown(keyCode, event)
+    }
+
+    override fun onKeyUp(keyCode: Int, event: KeyEvent?): Boolean {
+        if (keyCode in intArrayOf(KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)) {
+            longPressJob?.cancel()
+            if (!longPressHandled) {
+                player?.let { p ->
+                    if (p.isPlaying) {
+                        p.pause()
+                        isPaused = true
+                        pauseIndicator.visibility = View.VISIBLE
+                        scope.launch {
+                            delay(1500)
+                            pauseIndicator.visibility = View.GONE
+                        }
+                    } else {
+                        p.play()
+                        isPaused = false
+                        pauseIndicator.visibility = View.GONE
+                    }
+                }
+            }
+            return true
+        }
+        return super.onKeyUp(keyCode, event)
     }
 
     private fun toggleFavorite(channel: Channel) {
