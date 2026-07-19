@@ -1,5 +1,6 @@
 package com.emrity.piptv
 
+import android.content.Context
 import android.os.Bundle
 import android.view.*
 import android.webkit.WebView
@@ -39,13 +40,27 @@ class MainActivity : AppCompatActivity() {
     private lateinit var nowPlayingText: TextView
     private lateinit var channelCount: TextView
     private lateinit var splashView: WebView
+    private lateinit var topBar: View
 
     private val channels = mutableListOf<Channel>()
     private var currentItems = listOf<AdapterItem>()
     private var currentChannel: Channel? = null
     private var adapter: GroupedChannelAdapter? = null
     private var isListVisible = false
+    private var isSplashShowing = true
+    private var isPaused = false
+    private var resizeModeIndex = 0
+    private val resizeModes = intArrayOf(
+        PlayerView.RESIZE_MODE_FIT,
+        PlayerView.RESIZE_MODE_FILL,
+        PlayerView.RESIZE_MODE_ZOOM,
+        PlayerView.RESIZE_MODE_FIXED_WIDTH,
+        PlayerView.RESIZE_MODE_FIXED_HEIGHT
+    )
+    private val favorites = mutableSetOf<String>()
     private val scope = CoroutineScope(Dispatchers.Main)
+    private var lastActivityTime = 0L
+    private var topBarVisible = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -63,6 +78,7 @@ class MainActivity : AppCompatActivity() {
         nowPlayingBar = findViewById(R.id.now_playing_bar)
         nowPlayingText = findViewById(R.id.now_playing_text)
         channelCount = findViewById(R.id.channel_count)
+        topBar = findViewById(R.id.top_bar)
 
         channelList.layoutManager = LinearLayoutManager(this)
 
@@ -81,7 +97,40 @@ class MainActivity : AppCompatActivity() {
             delay(6000)
             splashView.animate().alpha(0f).setDuration(500).withEndAction {
                 splashView.visibility = View.GONE
+                isSplashShowing = false
             }
+        }
+
+        lastActivityTime = System.currentTimeMillis()
+        scope.launch { topBarAutoHideLoop() }
+
+        val prefs = getSharedPreferences("piptv", Context.MODE_PRIVATE)
+        scope.launch {
+            delay(6500)
+            if (!prefs.getBoolean("fav_hint_shown", false)) {
+                Toast.makeText(this@MainActivity, "Long-press OK to favorite channels", Toast.LENGTH_LONG).show()
+                prefs.edit().putBoolean("fav_hint_shown", true).apply()
+            }
+        }
+    }
+
+    private suspend fun topBarAutoHideLoop() {
+        while (true) {
+            delay(1000)
+            if (isSplashShowing || isListVisible) continue
+            if (System.currentTimeMillis() - lastActivityTime > 4000 && topBarVisible) {
+                topBar.animate().alpha(0f).setDuration(300).start()
+                topBarVisible = false
+            }
+        }
+    }
+
+    private fun showTopBar() {
+        lastActivityTime = System.currentTimeMillis()
+        if (!topBarVisible) {
+            topBar.alpha = 0f
+            topBar.animate().alpha(1f).setDuration(200).start()
+            topBarVisible = true
         }
     }
 
@@ -89,6 +138,13 @@ class MainActivity : AppCompatActivity() {
         val sorted = channels.sortedBy { it.name.lowercase() }
         val grouped = sorted.groupBy { it.category }
         val items = mutableListOf<AdapterItem>()
+
+        val favChannels = channels.filter { it.url in favorites }.sortedBy { it.name.lowercase() }
+        if (favChannels.isNotEmpty()) {
+            items.add(AdapterItem.Header("⭐ Favorites"))
+            items.addAll(favChannels.map { AdapterItem.ChannelItem(it) })
+        }
+
         for (cat in listOf("News", "Sports", "Religious", "General")) {
             val catChannels = grouped[cat] ?: continue
             if (catChannels.isEmpty()) continue
@@ -123,18 +179,28 @@ class MainActivity : AppCompatActivity() {
                 emptyView.visibility = View.VISIBLE
                 return@launch
             }
+            val prefs = getSharedPreferences("piptv", Context.MODE_PRIVATE)
+            favorites.addAll(prefs.getStringSet("favorites", emptySet()) ?: emptySet())
+
             currentItems = buildGroupedItems()
             adapter = GroupedChannelAdapter(currentItems) { channel ->
                 playChannel(channel)
             }
             channelList.adapter = adapter
             channelCount.text = "${channels.size} channels"
-            playChannel(channels.first())
+
+            val lastUrl = prefs.getString("last_channel_url", null)
+            val lastChannel = if (lastUrl != null) channels.find { it.url == lastUrl } else null
+            playChannel(lastChannel ?: channels.first())
         }
     }
 
     private fun playChannel(channel: Channel) {
         currentChannel = channel
+
+        getSharedPreferences("piptv", Context.MODE_PRIVATE).edit()
+            .putString("last_channel_url", channel.url)
+            .apply()
 
         nowPlayingText.text = channel.name
         nowPlayingBar.visibility = View.VISIBLE
@@ -145,7 +211,7 @@ class MainActivity : AppCompatActivity() {
         player = ExoPlayer.Builder(this).build().apply {
             setMediaItem(MediaItem.fromUri(channel.url))
             prepare()
-            playWhenReady = true
+            playWhenReady = !isPaused
             addListener(object : Player.Listener {
                 override fun onPlayerError(error: PlaybackException) {
                     Toast.makeText(this@MainActivity, getString(R.string.error_playing), Toast.LENGTH_SHORT).show()
@@ -154,6 +220,7 @@ class MainActivity : AppCompatActivity() {
         }
         playerView.player = player
         playerView.setShowBuffering(PlayerView.SHOW_BUFFERING_ALWAYS)
+        playerView.resizeMode = resizeModes[resizeModeIndex]
 
         adapter?.setActiveChannel(channel)
         val chPos = currentItems.indexOfFirst { it is AdapterItem.ChannelItem && it.channel.url == channel.url }
@@ -167,33 +234,40 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    override fun onKeyLongPress(keyCode: Int, event: KeyEvent?): Boolean {
+        return when (keyCode) {
+            KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> {
+                currentChannel?.let { toggleFavorite(it) }
+                true
+            }
+            else -> super.onKeyLongPress(keyCode, event)
+        }
+    }
+
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        showTopBar()
+
         when (keyCode) {
+            KeyEvent.KEYCODE_MENU -> {
+                if (!isSplashShowing) toggleList()
+                return true
+            }
             KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_DPAD_DOWN -> {
-                if (!isListVisible) {
-                    val sortedChannels = channels.sortedBy { it.name.lowercase() }
-                    val idx = currentChannel?.let { c -> sortedChannels.indexOfFirst { it.url == c.url } } ?: -1
-                    if (idx >= 0) {
-                        val step = if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) 1 else -1
-                        val next = (idx + step).coerceIn(0, sortedChannels.size - 1)
-                        playChannel(sortedChannels[next])
-                    }
-                    return true
-                }
                 return super.onKeyDown(keyCode, event)
             }
             KeyEvent.KEYCODE_DPAD_LEFT -> {
-                if (isListVisible) toggleList()
+                if (isListVisible && !isSplashShowing) toggleList()
                 return true
             }
             KeyEvent.KEYCODE_DPAD_RIGHT -> {
-                if (!isListVisible) toggleList()
+                if (!isListVisible && !isSplashShowing) toggleList()
                 return true
             }
             KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> {
                 player?.let { p ->
                     if (p.isPlaying) {
                         p.pause()
+                        isPaused = true
                         pauseIndicator.visibility = View.VISIBLE
                         scope.launch {
                             delay(1500)
@@ -201,13 +275,21 @@ class MainActivity : AppCompatActivity() {
                         }
                     } else {
                         p.play()
+                        isPaused = false
                         pauseIndicator.visibility = View.GONE
                     }
                 }
                 return true
             }
+            KeyEvent.KEYCODE_ZOOM -> {
+                resizeModeIndex = (resizeModeIndex + 1) % resizeModes.size
+                playerView.resizeMode = resizeModes[resizeModeIndex]
+                val names = arrayOf("Fit", "Fill", "Zoom", "Stretch W", "Stretch H")
+                Toast.makeText(this, names[resizeModeIndex], Toast.LENGTH_SHORT).show()
+                return true
+            }
             KeyEvent.KEYCODE_BACK -> {
-                if (isListVisible) {
+                if (isListVisible && !isSplashShowing) {
                     toggleList()
                     return true
                 }
@@ -218,12 +300,28 @@ class MainActivity : AppCompatActivity() {
         return super.onKeyDown(keyCode, event)
     }
 
+    private fun toggleFavorite(channel: Channel) {
+        val prefs = getSharedPreferences("piptv", Context.MODE_PRIVATE)
+        if (!favorites.remove(channel.url)) {
+            favorites.add(channel.url)
+            Toast.makeText(this, "★ Added to favorites", Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(this, "☆ Removed from favorites", Toast.LENGTH_SHORT).show()
+        }
+        prefs.edit().putStringSet("favorites", favorites).apply()
+        currentItems = buildGroupedItems()
+        adapter = GroupedChannelAdapter(currentItems) { c -> playChannel(c) }
+        channelList.adapter = adapter
+        adapter?.setActiveChannel(currentChannel)
+    }
+
     private fun toggleList() {
         isListVisible = !isListVisible
         sidebar.animate()
             .translationX(if (isListVisible) 0f else -sidebar.width.toFloat())
             .setDuration(200)
             .start()
+        if (isListVisible) showTopBar()
     }
 
     private fun showLoading(show: Boolean) {
@@ -242,7 +340,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        player?.playWhenReady = true
+        if (!isPaused) player?.playWhenReady = true
     }
 
     override fun onDestroy() {
