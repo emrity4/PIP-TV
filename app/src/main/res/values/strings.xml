@@ -7,6 +7,5 @@
     <string name="error_loading">Failed to load playlist</string>
     <string name="error_playing">Could not play this channel</string>
     <string name="retry">Retry</string>
-    <string name="now_playing">Now Playing</string>
     <string name="channels">Channels</string>
 </resources>

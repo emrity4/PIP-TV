@@ -34,13 +34,53 @@
     </LinearLayout>
 
     <LinearLayout
+        android:id="@+id/top_bar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|start"
+        android:layout_marginTop="20dp"
+        android:layout_marginStart="16dp"
+        android:orientation="horizontal"
+        android:elevation="6dp"
+        android:background="#CC0A0A0B"
+        android:padding="6dp">
+
+        <TextView
+            android:id="@+id/hamburger_button"
+            android:layout_width="52dp"
+            android:layout_height="52dp"
+            android:gravity="center"
+            android:text="☰"
+            android:textColor="#FFFFFF"
+            android:textSize="26sp"
+            android:focusable="true"
+            android:clickable="true"
+            android:background="@drawable/toolbar_btn_bg" />
+
+        <TextView
+            android:id="@+id/exit_button"
+            android:layout_width="52dp"
+            android:layout_height="52dp"
+            android:gravity="center"
+            android:text="⏻"
+            android:textColor="#FFFFFF"
+            android:textSize="22sp"
+            android:focusable="true"
+            android:clickable="true"
+            android:background="@drawable/toolbar_btn_bg" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/sidebar"
         android:layout_width="400dp"
         android:layout_height="match_parent"
         android:layout_gravity="start"
         android:orientation="vertical"
-        android:background="#E50A0A0B">
+        android:background="#E50A0A0B"
+        android:translationX="-400dp">
 
         <TextView
+            android:id="@+id/sidebar_header"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/channels"
@@ -91,7 +131,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="top|start"
-        android:layout_marginTop="28dp"
+        android:layout_marginTop="88dp"
         android:layout_marginStart="20dp"
         android:orientation="horizontal"
         android:elevation="4dp"
@@ -181,6 +221,12 @@
             android:paddingStart="32dp"
             android:paddingEnd="32dp" />
     </LinearLayout>
+
+    <WebView
+        android:id="@+id/splash_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="visible" />
 
     <LinearLayout
         android:id="@+id/empty_view"

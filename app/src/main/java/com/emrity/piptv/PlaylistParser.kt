@@ -32,14 +32,10 @@ object PlaylistParser {
             val line = lines[i].trim()
             if (line.startsWith("#EXTINF:")) {
                 var name = ""
-                var logo = ""
                 var group = "General"
 
                 val nameMatch = Regex(",([^,]*)$").find(line)
                 if (nameMatch != null) name = nameMatch.groupValues[1].trim()
-
-                val logoMatch = Regex("""tvg-logo="([^"]*)"""").find(line)
-                if (logoMatch != null) logo = logoMatch.groupValues[1]
 
                 val groupMatch = Regex("""group-title="([^"]*)"""").find(line)
                 if (groupMatch != null) group = groupMatch.groupValues[1]
@@ -48,7 +44,7 @@ object PlaylistParser {
                     i++
                     val url = lines[i].trim()
                     if (url.isNotEmpty() && !url.startsWith("#")) {
-                        channels.add(Channel(name, logo, url, group))
+                        channels.add(Channel(name, url, group))
                     }
                 }
             }
