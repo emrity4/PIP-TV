@@ -38,33 +38,44 @@ class MainActivity : AppCompatActivity() {
     private var adapter: ChannelAdapter? = null
     private var isListVisible = true
 
-    private val scope = CoroutineScope(Dispatchers.Main)
+    private var scope: CoroutineScope? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        setContentView(R.layout.activity_main)
+        try {
+            scope = CoroutineScope(Dispatchers.Main)
+            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            setContentView(R.layout.activity_main)
 
-        playerView = findViewById(R.id.player_view)
-        pauseIndicator = findViewById(R.id.pause_indicator)
-        channelList = findViewById(R.id.channel_list)
-        loadingView = findViewById(R.id.loading_view)
-        errorView = findViewById(R.id.error_view)
-        errorText = findViewById(R.id.error_text)
-        emptyView = findViewById(R.id.empty_view)
-        nowPlayingBar = findViewById(R.id.now_playing_bar)
-        nowPlayingText = findViewById(R.id.now_playing_text)
-        channelCount = findViewById(R.id.channel_count)
+            playerView = findViewById(R.id.player_view)
+            pauseIndicator = findViewById(R.id.pause_indicator)
+            channelList = findViewById(R.id.channel_list)
+            loadingView = findViewById(R.id.loading_view)
+            errorView = findViewById(R.id.error_view)
+            errorText = findViewById(R.id.error_text)
+            emptyView = findViewById(R.id.empty_view)
+            nowPlayingBar = findViewById(R.id.now_playing_bar)
+            nowPlayingText = findViewById(R.id.now_playing_text)
+            channelCount = findViewById(R.id.channel_count)
 
-        channelList.layoutManager = LinearLayoutManager(this)
-        adapter = ChannelAdapter(channels) { index ->
-            playChannel(index)
+            channelList.layoutManager = LinearLayoutManager(this)
+            adapter = ChannelAdapter(channels) { index ->
+                playChannel(index)
+            }
+            channelList.adapter = adapter
+
+            findViewById<Button>(R.id.retry_button).setOnClickListener { loadPlaylist() }
+
+            loadPlaylist()
+        } catch (e: Exception) {
+            setContentView(TextView(this).apply {
+                text = "Error: ${e.message ?: e.javaClass.simpleName}"
+                setTextColor(android.graphics.Color.WHITE)
+                textSize = 16f
+                gravity = android.view.Gravity.CENTER
+                setPadding(40, 40, 40, 40)
+            })
         }
-        channelList.adapter = adapter
-
-        findViewById<Button>(R.id.retry_button).setOnClickListener { loadPlaylist() }
-
-        loadPlaylist()
     }
 
     private fun loadPlaylist() {
@@ -72,7 +83,7 @@ class MainActivity : AppCompatActivity() {
         errorView.visibility = View.GONE
         emptyView.visibility = View.GONE
 
-        scope.launch {
+        scope?.launch {
             val result = withContext(Dispatchers.IO) {
                 PlaylistParser.load(this@MainActivity, getString(R.string.default_playlist_url))
             }
@@ -123,7 +134,7 @@ class MainActivity : AppCompatActivity() {
             channelList.smoothScrollToPosition(index)
         }
 
-        scope.launch {
+        scope?.launch {
             delay(3000)
             nowPlayingBar.animate().alpha(0f).setDuration(500).start()
         }
