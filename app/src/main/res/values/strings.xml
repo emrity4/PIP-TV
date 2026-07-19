@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PIP-TV</string>
+    <string name="default_playlist_url">playlist.m3u8</string>
+    <string name="loading_channels">Loading channels…</string>
+    <string name="no_channels">No channels found</string>
+    <string name="error_loading">Failed to load playlist</string>
+    <string name="error_playing">Could not play this channel</string>
+    <string name="retry">Retry</string>
+    <string name="now_playing">Now Playing</string>
+    <string name="channels">Channels</string>
+</resources>
