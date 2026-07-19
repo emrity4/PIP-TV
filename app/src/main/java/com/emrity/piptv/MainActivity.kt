@@ -49,14 +49,6 @@ class MainActivity : AppCompatActivity() {
     private var isListVisible = false
     private var isSplashShowing = true
     private var isPaused = false
-    private var resizeModeIndex = 0
-    private val resizeModes = intArrayOf(
-        PlayerView.RESIZE_MODE_FIT,
-        PlayerView.RESIZE_MODE_FILL,
-        PlayerView.RESIZE_MODE_ZOOM,
-        PlayerView.RESIZE_MODE_FIXED_WIDTH,
-        PlayerView.RESIZE_MODE_FIXED_HEIGHT
-    )
     private val favorites = mutableSetOf<String>()
     private val scope = CoroutineScope(Dispatchers.Main)
     private var lastActivityTime = 0L
@@ -266,13 +258,6 @@ class MainActivity : AppCompatActivity() {
                 }
                 return true
             }
-            KeyEvent.KEYCODE_ZOOM -> {
-                resizeModeIndex = (resizeModeIndex + 1) % resizeModes.size
-                playerView.resizeMode = resizeModes[resizeModeIndex]
-                val names = arrayOf("Fit", "Fill", "Zoom", "Stretch W", "Stretch H")
-                Toast.makeText(this, names[resizeModeIndex], Toast.LENGTH_SHORT).show()
-                return true
-            }
             KeyEvent.KEYCODE_BACK -> {
                 if (isListVisible && !isSplashShowing) {
                     toggleList()
@@ -322,7 +307,7 @@ class MainActivity : AppCompatActivity() {
         currentItems = buildGroupedItems()
         adapter = GroupedChannelAdapter(currentItems) { c -> playChannel(c) }
         channelList.adapter = adapter
-        adapter?.setActiveChannel(currentChannel)
+        currentChannel?.let { adapter?.setActiveChannel(it) }
     }
 
     private fun toggleList() {
