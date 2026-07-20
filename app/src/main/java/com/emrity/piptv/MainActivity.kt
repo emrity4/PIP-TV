@@ -131,6 +131,15 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun autoSkip() {
+        val idx = currentItems.indexOfFirst { it is AdapterItem.ChannelItem && it.channel.url == currentChannel?.url }
+        val next = (idx + 1 until currentItems.size)
+            .map { currentItems[it] }
+            .filterIsInstance<AdapterItem.ChannelItem>()
+            .firstOrNull()?.channel
+        if (next != null) playChannel(next)
+    }
+
     private fun showTopBar() {
         if (isSplashShowing) return
         lastActivityTime = System.currentTimeMillis()
@@ -236,7 +245,7 @@ class MainActivity : AppCompatActivity() {
                             player?.playWhenReady = !isPaused
                         }
                     } else {
-                        Toast.makeText(this@MainActivity, getString(R.string.error_playing), Toast.LENGTH_SHORT).show()
+                        autoSkip()
                     }
                 }
             })
