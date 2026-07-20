@@ -36,9 +36,9 @@
         android:id="@+id/top_bar"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="top|start"
+        android:layout_gravity="top|end"
         android:layout_marginTop="20dp"
-        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
         android:orientation="horizontal"
         android:elevation="6dp"
         android:background="#CC0A0A0B"
@@ -85,8 +85,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="227 channels"
-            android:textColor="#A0A0A8"
-            android:textSize="13sp"
+            android:textColor="#606068"
+            android:textSize="12sp"
             android:paddingBottom="12dp"
             android:paddingStart="24dp"
             android:paddingEnd="24dp"
@@ -118,40 +118,39 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="top|start"
-        android:layout_marginTop="88dp"
+        android:layout_marginTop="24dp"
         android:layout_marginStart="20dp"
         android:orientation="horizontal"
-        android:elevation="4dp"
+        android:elevation="6dp"
+        android:background="#E50A0A0B"
+        android:paddingStart="16dp"
+        android:paddingEnd="4dp"
         android:visibility="gone">
 
         <TextView
             android:id="@+id/now_playing_text"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_height="48dp"
+            android:gravity="center_vertical"
             android:textColor="#FFFFFF"
             android:textSize="18sp"
             android:textStyle="bold"
             android:maxLines="1"
             android:ellipsize="end"
-            android:paddingStart="16dp"
-            android:paddingEnd="12dp"
-            android:paddingTop="10dp"
-            android:paddingBottom="10dp"
-            android:background="#E5121315" />
+            android:paddingEnd="12dp" />
 
         <TextView
             android:id="@+id/live_badge"
             android:layout_width="wrap_content"
-            android:layout_height="match_parent"
+            android:layout_height="48dp"
             android:gravity="center"
             android:text="● LIVE"
-            android:textColor="#FF453A"
+            android:textColor="#FF7A35"
             android:textSize="11sp"
             android:textStyle="bold"
-            android:letterSpacing="0.08"
-            android:paddingStart="4dp"
-            android:paddingEnd="14dp"
-            android:background="#E5121315" />
+            android:letterSpacing="0.1"
+            android:paddingEnd="16dp"
+            android:paddingStart="4dp" />
     </LinearLayout>
 
     <LinearLayout

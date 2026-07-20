@@ -132,6 +132,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showTopBar() {
+        if (isSplashShowing) return
         lastActivityTime = System.currentTimeMillis()
         if (!topBarVisible) {
             topBar.alpha = 0f
